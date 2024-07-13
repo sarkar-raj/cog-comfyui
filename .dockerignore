@@ -9,6 +9,7 @@
 *.gif
 *.mp4
 *.zip
+*.tar
 *.webp
 *.webm
 
@@ -19,11 +20,14 @@
 *.bin
 *.onnx
 *.torchscript
+*.engine
 # .pt files are used by efficiency-nodes-comfyui
 
 # Files
 scripts/*
+test/*
 updated_weights.json
+downloaded_user_models/
 
 # Extension files
 *.ipynb

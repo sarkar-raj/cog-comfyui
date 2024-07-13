@@ -14,36 +14,40 @@ TLDR: json blob -> img/mp4
 
 ## What’s included
 
-We've tried to include many of the most popular model weights:
+We've tried to include many of the most popular model weights and custom nodes:
 
-[View list of supported weights](https://github.com/fofr/cog-comfyui/blob/main/supported_weights.md)
-
-The following custom nodes are also supported, these are fixed to specific commits:
-
-- [ComfyUI Advanced ControlNet](https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet/tree/bd5bcbf)
-- [ComfyUI AnimateDiff Evolved](https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved/tree/6148195)
-- [ComfyUI BRIA AI RMBG](https://github.com/ZHO-ZHO-ZHO/ComfyUI-BRIA_AI-RMBG/tree/44a3f8f)
-- [ComfyUI Comfyroll CustomNodes](https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes/tree/d78b780)
-- [ComfyUI Controlnet Aux](https://github.com/Fannovel16/comfyui_controlnet_aux/tree/6d6f63c)
-- [ComfyUI Essentials](https://github.com/cubiq/ComfyUI_essentials/tree/c9236fe)
-- [ComfyUI FizzNodes](https://github.com/FizzleDorf/ComfyUI_FizzNodes/tree/cd6cadd)
-- [ComfyUI Impact Pack](https://github.com/ltdrdata/ComfyUI-Impact-Pack/tree/6aee0aa)
-- [ComfyUI Inspire Pack](https://github.com/ltdrdata/ComfyUI-Inspire-Pack/tree/c8231dd)
-- [ComfyUI InstantID](https://github.com/cubiq/ComfyUI_InstantID/tree/0fcf494)
-- [ComfyUI IPAdapter Plus](https://github.com/cubiq/ComfyUI_IPAdapter_plus/tree/4e898fe)
-- [ComfyUI Logic](https://github.com/theUpsider/ComfyUI-Logic/tree/fb88973)
-- [ComfyUI PhotoMaker](https://github.com/shiimizu/ComfyUI-PhotoMaker/tree/75542a4)
-- [ComfyUI TinyTerra Nodes](https://github.com/TinyTerra/ComfyUI_tinyterraNodes/tree/eda8a09)
-- [ComfyUI UltimateSDUpscale](https://github.com/ssitu/ComfyUI_UltimateSDUpscale/tree/bcefc5b)
-- [ComfyUI VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/tree/1dbf01b)
-- [comfyui-reactor-node](https://github.com/Gourieff/comfyui-reactor-node/tree/ae81f62)
-- [comfyui_segment_anything](https://github.com/storyicon/comfyui_segment_anything/tree/681d977)
-- [Derfuu ComfyUI ModdedNodes](https://github.com/Derfuu/Derfuu_ComfyUI_ModdedNodes/tree/2ace4c4)
-- [Efficiency Nodes ComfyUI](https://github.com/jags111/efficiency-nodes-comfyui/tree/1ac5f18)
-- [masquerade-nodes-comfyui](https://github.com/BadCafeCode/tree/masquerade-nodes-comfyui/240209b)
-- [WAS Node Suite](https://github.com/WASasquatch/was-node-suite-comfyui/tree/33534f2)
+- [View list of supported weights](https://github.com/fofr/cog-comfyui/blob/main/supported_weights.md)
+- [View list of supported custom nodes](https://github.com/fofr/cog-comfyui/blob/main/custom_nodes.json)
 
 Raise an issue to request more custom nodes or models, or use this model as a template to roll your own.
+
+## Examples of models derived from this one
+
+See the commits on these repositories to see how to convert this repo into a new Replicate model:
+
+- https://github.com/fofr/cog-face-to-many
+- https://github.com/fofr/cog-video-morpher
+- https://github.com/fofr/cog-stickers
+- https://github.com/fofr/cog-material-transfer
+
+## Add your own weights
+
+Visit the `train` tab on Replicate to create a version of this model with your own weights:
+
+https://replicate.com/fofr/any-comfyui-workflow/train
+
+Here you can give public or private URLs to weights on HuggingFace and CivitAI. If URLs are private or need authentication, make sure to include an API key or access token.
+
+Check the training logs to see what filenames to use in your workflow JSON. For example:
+
+```
+Downloading from HuggingFace:
+...
+Size of the tar file: 217.88 MB
+====================================
+When using your new model, use these filenames in your JSON workflow:
+araminta_k_midsommar_cartoon.safetensors
+```
 
 ## How to use
 
@@ -117,11 +121,13 @@ Clone this repository:
 git clone --recurse-submodules https://github.com/fofr/cog-comfyui.git
 ```
 
-Run the [following script](https://github.com/fofr/cog-comfyui/blob/main/scripts/clone_plugins.sh) to install all the custom nodes:
+Run the [following script](https://github.com/fofr/cog-comfyui/blob/main/scripts/install_custom_nodes.py) to install all the custom nodes:
 
 ```sh
-./scripts/clone_plugins.sh
+./scripts/install_custom_nodes.py
 ```
+
+You can view the list of nodes in [custom_nodes.json](https://github.com/fofr/cog-comfyui/blob/main/custom_nodes.json)
 
 ### Running the Web UI from your Cog container
 

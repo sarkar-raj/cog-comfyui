@@ -2,29 +2,56 @@ import os
 import shutil
 import tarfile
 import zipfile
+import mimetypes
 from typing import List
 from cog import BasePredictor, Input, Path
-from helpers.comfyui import ComfyUI
+from comfyui import ComfyUI
+from weights_downloader import WeightsDownloader
+from cog_model_helpers import optimise_images
+from config import config
 
+
+os.environ["DOWNLOAD_LATEST_WEIGHTS_MANIFEST"] = "true"
+mimetypes.add_type("image/webp", ".webp")
 OUTPUT_DIR = "/tmp/outputs"
 INPUT_DIR = "/tmp/inputs"
 COMFYUI_TEMP_OUTPUT_DIR = "ComfyUI/temp"
+ALL_DIRECTORIES = [OUTPUT_DIR, INPUT_DIR, COMFYUI_TEMP_OUTPUT_DIR]
 
-with open("examples/api_workflows/sdxl_simple_example.json", "r") as file:
+with open("examples/api_workflows/sd15_txt2img.json", "r") as file:
     EXAMPLE_WORKFLOW_JSON = file.read()
 
 
 class Predictor(BasePredictor):
-    def setup(self):
+    def setup(self, weights: str):
+        if bool(weights):
+            self.handle_user_weights(weights)
+
         self.comfyUI = ComfyUI("127.0.0.1:8188")
         self.comfyUI.start_server(OUTPUT_DIR, INPUT_DIR)
 
-    def cleanup(self):
-        self.comfyUI.clear_queue()
-        for directory in [OUTPUT_DIR, INPUT_DIR, COMFYUI_TEMP_OUTPUT_DIR]:
-            if os.path.exists(directory):
-                shutil.rmtree(directory)
-            os.makedirs(directory)
+    def handle_user_weights(self, weights: str):
+        print(f"Downloading user weights from: {weights}")
+        WeightsDownloader.download("weights.tar", weights, config["USER_WEIGHTS_PATH"])
+        for item in os.listdir(config["USER_WEIGHTS_PATH"]):
+            source = os.path.join(config["USER_WEIGHTS_PATH"], item)
+            destination = os.path.join(config["MODELS_PATH"], item)
+            if os.path.isdir(source):
+                if not os.path.exists(destination):
+                    print(f"Moving {source} to {destination}")
+                    shutil.move(source, destination)
+                else:
+                    for root, _, files in os.walk(source):
+                        for file in files:
+                            if not os.path.exists(os.path.join(destination, file)):
+                                print(
+                                    f"Moving {os.path.join(root, file)} to {destination}"
+                                )
+                                shutil.move(os.path.join(root, file), destination)
+                            else:
+                                print(
+                                    f"Skipping {file} because it already exists in {destination}"
+                                )
 
     def handle_input_file(self, input_file: Path):
         file_extension = os.path.splitext(input_file)[1].lower()
@@ -41,22 +68,8 @@ class Predictor(BasePredictor):
 
         print("====================================")
         print(f"Inputs uploaded to {INPUT_DIR}:")
-        self.log_and_collect_files(INPUT_DIR)
+        self.comfyUI.get_files(INPUT_DIR)
         print("====================================")
-
-    def log_and_collect_files(self, directory, prefix=""):
-        files = []
-        for f in os.listdir(directory):
-            if f == "__MACOSX":
-                continue
-            path = os.path.join(directory, f)
-            if os.path.isfile(path):
-                print(f"{prefix}{f}")
-                files.append(Path(path))
-            elif os.path.isdir(path):
-                print(f"{prefix}{f}/")
-                files.extend(self.log_and_collect_files(path, prefix=f"{prefix}{f}/"))
-        return files
 
     def predict(
         self,
@@ -72,35 +85,39 @@ class Predictor(BasePredictor):
             description="Return any temporary files, such as preprocessed controlnet images. Useful for debugging.",
             default=False,
         ),
+        output_format: str = optimise_images.predict_output_format(),
+        output_quality: int = optimise_images.predict_output_quality(),
         randomise_seeds: bool = Input(
             description="Automatically randomise seeds (seed, noise_seed, rand_seed)",
             default=True,
         ),
+        force_reset_cache: bool = Input(
+            description="Force reset the ComfyUI cache before running the workflow. Useful for debugging.",
+            default=False,
+        ),
     ) -> List[Path]:
         """Run a single prediction on the model"""
-        self.cleanup()
+        self.comfyUI.cleanup(ALL_DIRECTORIES)
 
         if input_file:
             self.handle_input_file(input_file)
 
-        # TODO: Record the previous models loaded
-        # If different, run /free to free up models and memory
-
         wf = self.comfyUI.load_workflow(workflow_json or EXAMPLE_WORKFLOW_JSON)
+
+        self.comfyUI.connect()
+
+        if force_reset_cache or not randomise_seeds:
+            self.comfyUI.reset_execution_cache()
 
         if randomise_seeds:
             self.comfyUI.randomise_seeds(wf)
 
-        self.comfyUI.connect()
         self.comfyUI.run_workflow(wf)
 
-        files = []
         output_directories = [OUTPUT_DIR]
         if return_temp_files:
             output_directories.append(COMFYUI_TEMP_OUTPUT_DIR)
 
-        for directory in output_directories:
-            print(f"Contents of {directory}:")
-            files.extend(self.log_and_collect_files(directory))
-
-        return files
+        return optimise_images.optimise_image_files(
+            output_format, output_quality, self.comfyUI.get_files(output_directories)
+        )
